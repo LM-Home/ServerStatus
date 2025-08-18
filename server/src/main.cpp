@@ -550,13 +550,10 @@ void CMain::WatchdogMessage(int ClientNetID, double load_1, double load_5, doubl
 
                     //url encode, Rules conflict with url special characters，eg：&, del rules, by https://cpp.la, 2023-10-09
                     char encodeBuffer[2048] = { 0 };
-                    sprintf(encodeBuffer, "【告警名称】 %s \n\n【告警时间】 %s  \n\n【用户名】 %s \n\n【节点名】 %s \n\n【虚拟化】 %s \n\n【主机名】 %s \n\n【位  置】 %s",
+                    sprintf(encodeBuffer, "【告警名称】 %s \n【告警时间】 %s \n【节点名称】 %s \n【节点位置】 %s",
                             Watchdog(ID)->m_aName,
                             standardTime,
-                            username.c_str(),
                             name.c_str(),
-                            type.c_str(),
-                            host.c_str(),
                             location.c_str());
                     char *encodeUrl = curl_easy_escape(curl, encodeBuffer, strlen(encodeBuffer));
 
