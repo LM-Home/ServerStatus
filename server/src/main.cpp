@@ -748,13 +748,10 @@ void CMain::offlineAlarmThread(void *pUser)
 
                         //url encode, Rules conflict with url special characters，eg：&, del rules, by https://cpp.la, 2023-10-09
                         char encodeBuffer[2048] = { 0 };
-                        sprintf(encodeBuffer, "【告警名称】 %s \n\n【告警时间】 %s  \n\n【用户名】 %s \n\n【节点名】 %s \n\n【虚拟化】 %s \n\n【主机名】 %s \n\n【位  置】 %s",
+                        sprintf(encodeBuffer, "【告警名称】 %s \n【告警时间】 %s \n【节点名称】 %s \n【节点位置】 %s",
                                 pWatchDogs[ID].m_aName,
                                 standardTime,
-                                pClients[ClientID].m_aUsername,
                                 pClients[ClientID].m_aName,
-                                pClients[ClientID].m_aType,
-                                pClients[ClientID].m_aHost,
                                 pClients[ClientID].m_aLocation);
                         char *encodeUrl = curl_easy_escape(curl, encodeBuffer, strlen(encodeBuffer));
 
