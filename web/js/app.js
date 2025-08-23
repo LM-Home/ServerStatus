@@ -172,7 +172,7 @@ function renderServersCards(){
     const buckets = `<div class=\"buckets\">${bucket(p1)}${bucket(p2)}${bucket(p3)}</div>`;
     const key = s.name || s.location || 'node';
   const highLoad = online && ( (s.cpu||0)>=90 || (memPct)>=90 || (hddPct)>=90 );
-  html += `<div class=\"card${online?'':' offline'}${highLoad?' high-load':''}\" data-idx=\"${idx}\" data-online=\"${online?1:0}\">\n      <button class=\"expand-btn\" aria-label=\"展开\">▼</button>\n      <div class=\"card-header\">\n        <div class=\"card-title\">${s.name||'-'} <span class=\"tag\">${s.location||'-'}</span></div>\n        ${pill}\n      </div>\n      <div class=\"kvlist\">\n        <div><span class=\"key\">负载</span><span>${s.load_1==-1?'–':s.load_1?.toFixed(2)}</span></div>\n        <div><span class=\"key\">在线</span><span>${s.uptime||'-'}</span></div>\n        <div><span class=\"key\">月流量</span><span><span class=\"${trafficCls}\" title=\"本月下行 | 上行 (≥500GB 触发红黄)\"><span class=\"half in\">${monthIn}</span><span class=\"half out\">${monthOut}</span></span></span></div>\n        <div><span class=\"key\">网络</span><span>${netNow}</span></div>\n        <div><span class=\"key\">总流量</span><span>${netTotal}</span></div>\n        <div><span class=\"key\">CPU</span><span>${s.cpu||0}%</span></div>\n        <div><span class=\"key\">内存</span><span>${memPct.toFixed(0)}%</span></div>\n        <div><span class=\"key\">硬盘</span><span>${hddPct.toFixed(0)}%</span></div>\n      </div>\n      ${buckets}\n      <div class=\"expand-area\">\n        <div style=\"font-size:.65rem;opacity:.7;margin-top:.3rem\">${online?'点击卡片可查看详情':'离线，不可查看详情'}</div>\n      </div>\n    </div>`;
+  html += `<div class=\"card${online?'':' offline'}${highLoad?' high-load':''}\" data-idx=\"${idx}\" data-online=\"${online?1:0}\">\n      <div class=\"card-header\">\n        <div class=\"card-title\">${s.name||'-'} <span class=\"tag\">${s.location||'-'}</span></div>\n        ${pill}\n      </div>\n      <div class=\"kvlist\">\n        <div><span class=\"key\">负载</span><span>${s.load_1==-1?'–':s.load_1?.toFixed(2)}</span></div>\n        <div><span class=\"key\">在线</span><span>${s.uptime||'-'}</span></div>\n        <div><span class=\"key\">月流量</span><span><span class=\"${trafficCls}\" title=\"本月下行 | 上行 (≥500GB 触发红黄)\"><span class=\"half in\">${monthIn}</span><span class=\"half out\">${monthOut}</span></span></span></div>\n        <div><span class=\"key\">网络</span><span>${netNow}</span></div>\n        <div><span class=\"key\">总流量</span><span>${netTotal}</span></div>\n        <div><span class=\"key\">CPU</span><span>${s.cpu||0}%</span></div>\n        <div><span class=\"key\">内存</span><span>${memPct.toFixed(0)}%</span></div>\n        <div><span class=\"key\">硬盘</span><span>${hddPct.toFixed(0)}%</span></div>\n      </div>\n      ${buckets}\n    </div>`;
   });
   wrap.innerHTML = html || '<div class="muted" style="font-size:.75rem;text-align:center;padding:1rem;">无数据</div>';
   wrap.querySelectorAll('.card').forEach(card=>{
@@ -327,7 +327,7 @@ function openDetail(i){
         <span style="color:#3b82f6">● 联通 (<span id="lat-cu">${num(s.time_10010)}ms</span>)</span>
         <span style="color:#10b981">● 电信 (<span id="lat-ct">${num(s.time_189)}ms</span>)</span>
         <span style="color:#f59e0b">● 移动 (<span id="lat-cm">${num(s.time_10086)}ms</span>)</span>
-        <span style="opacity:.6"> (~${S.hist[key]?S.hist[key].cu.length:0} 条)</span>
+        <span style="opacity:.6"> (${S.hist[key]?S.hist[key].cu.length:0} 条)</span>
       </div>
     </div>`;
   } else {
@@ -372,7 +372,7 @@ function openDetail(i){
         <span style="color:#8b5cf6">● load1</span>
         <span style="color:#10b981">● load5</span>
         <span style="color:#f59e0b">● load15</span>
-        <span style="opacity:.6">(~${(S.loadHist[key]?S.loadHist[key].l1.length:0)} 条)</span>
+        <span style="opacity:.6">(${(S.loadHist[key]?S.loadHist[key].l1.length:0)} 条)</span>
       </div>
     </div>
   <!-- 进度条移除：读/写/虚存以文本形式显示于上方合并行 -->
