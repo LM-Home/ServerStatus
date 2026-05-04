@@ -153,11 +153,13 @@ names_done:
 			}
 			// alarm logic
 			if(cert->m_aExpireTS>0){
-				int days = (int)((cert->m_aExpireTS - nowt)/86400);
-				int64_t *lastAlarm = NULL; int need=0; int target=0;
-				if(days <=7 && days >3){ lastAlarm=&cert->m_aLastAlarm7; target=7; }
-				else if(days <=3 && days >1){ lastAlarm=&cert->m_aLastAlarm3; target=3; }
-				else if(days <=1){ lastAlarm=&cert->m_aLastAlarm1; target=1; }
+				// 剩余天数: 向下取整 (floor) —— 与 JSON expire_days 保持一致，用于阈值分桶和消息显示
+				int64_t secsLeft = cert->m_aExpireTS - nowt;
+				int days = (int)(secsLeft/86400);
+				int64_t *lastAlarm = NULL; int need=0;
+				if(days <=7 && days >3){ lastAlarm=&cert->m_aLastAlarm7; }
+				else if(days <=3 && days >1){ lastAlarm=&cert->m_aLastAlarm3; }
+				else if(days <=1){ lastAlarm=&cert->m_aLastAlarm1; }
 				if(lastAlarm && (*lastAlarm==0 || nowt - *lastAlarm > 20*3600)) need=1; // avoid spam, 20h
 				if(need && strlen(cert->m_aCallback)>0){
 					CURL *curl = curl_easy_init();
@@ -166,7 +168,8 @@ names_done:
 						char timebuf[32];
 						time_t expt = (time_t)cert->m_aExpireTS;
 						strftime(timebuf,sizeof(timebuf),"%Y-%m-%d %H:%M:%S", gmtime(&expt));
-						snprintf(msg,sizeof(msg),"【SSL证书提醒】%s(%s) 将在 %d 天后(%s UTC) 到期", cert->m_aName, cert->m_aDomain, target, timebuf);
+						// 使用 floor(days)
+										snprintf(msg,sizeof(msg),"【SSL证书提醒】%s(%s) 将在 %d 天后(%s UTC) 到期", cert->m_aName, cert->m_aDomain, days, timebuf);
 						char *enc = curl_easy_escape(curl,msg,0);
 						char url[1500]; snprintf(url,sizeof(url),"%s%s", cert->m_aCallback, enc?enc:"");
 						curl_easy_setopt(curl, CURLOPT_POST, 1L);
@@ -383,6 +386,9 @@ int CMain::HandleMessage(int ClientNetID, char *pMessage)
 			pClient->m_Stats.m_Online6 = rStart["online6"].u.boolean;
 		if(rStart["custom"].type == json_string)
 			str_copy(pClient->m_Stats.m_aCustom, rStart["custom"].u.string.ptr, sizeof(pClient->m_Stats.m_aCustom));
+		// optional OS field from clients
+		if(rStart["os"].type == json_string)
+			str_copy(pClient->m_Stats.m_aOS, rStart["os"].u.string.ptr, sizeof(pClient->m_Stats.m_aOS));
 
 		//copy message for watchdog to analysis
         WatchdogMessage(ClientNetID,
@@ -627,7 +633,7 @@ void CMain::JSONUpdateThread(void *pUser)
                 }
 
 				str_format(pBuf, sizeof(aFileBuf) - (pBuf - aFileBuf),
-				 "{ \"name\": \"%s\",\"type\": \"%s\",\"host\": \"%s\",\"location\": \"%s\",\"online4\": %s, \"online6\": %s, \"uptime\": \"%s\",\"load_1\": %.2f, \"load_5\": %.2f, \"load_15\": %.2f,\"ping_10010\": %.2f, \"ping_189\": %.2f, \"ping_10086\": %.2f,\"time_10010\": %" PRId64 ", \"time_189\": %" PRId64 ", \"time_10086\": %" PRId64 ", \"tcp_count\": %" PRId64 ", \"udp_count\": %" PRId64 ", \"process_count\": %" PRId64 ", \"thread_count\": %" PRId64 ", \"network_rx\": %" PRId64 ", \"network_tx\": %" PRId64 ", \"network_in\": %" PRId64 ", \"network_out\": %" PRId64 ", \"cpu\": %d, \"memory_total\": %" PRId64 ", \"memory_used\": %" PRId64 ", \"swap_total\": %" PRId64 ", \"swap_used\": %" PRId64 ", \"hdd_total\": %" PRId64 ", \"hdd_used\": %" PRId64 ", \"last_network_in\": %" PRId64 ", \"last_network_out\": %" PRId64 ",\"io_read\": %" PRId64 ", \"io_write\": %" PRId64 ",\"custom\": \"%s\" },\n",
+                 "{ \"name\": \"%s\",\"type\": \"%s\",\"host\": \"%s\",\"location\": \"%s\",\"online4\": %s, \"online6\": %s, \"uptime\": \"%s\",\"load_1\": %.2f, \"load_5\": %.2f, \"load_15\": %.2f,\"ping_10010\": %.2f, \"ping_189\": %.2f, \"ping_10086\": %.2f,\"time_10010\": %" PRId64 ", \"time_189\": %" PRId64 ", \"time_10086\": %" PRId64 ", \"tcp_count\": %" PRId64 ", \"udp_count\": %" PRId64 ", \"process_count\": %" PRId64 ", \"thread_count\": %" PRId64 ", \"network_rx\": %" PRId64 ", \"network_tx\": %" PRId64 ", \"network_in\": %" PRId64 ", \"network_out\": %" PRId64 ", \"cpu\": %d, \"memory_total\": %" PRId64 ", \"memory_used\": %" PRId64 ", \"swap_total\": %" PRId64 ", \"swap_used\": %" PRId64 ", \"hdd_total\": %" PRId64 ", \"hdd_used\": %" PRId64 ", \"last_network_in\": %" PRId64 ", \"last_network_out\": %" PRId64 ",\"io_read\": %" PRId64 ", \"io_write\": %" PRId64 ",\"custom\": \"%s\", \"os\": \"%s\" },\n",
 					pClients[i].m_aName,pClients[i].m_aType,pClients[i].m_aHost,pClients[i].m_aLocation,
 					pClients[i].m_Stats.m_Online4 ? "true" : "false",pClients[i].m_Stats.m_Online6 ? "true" : "false",
 					aUptime, pClients[i].m_Stats.m_Load_1, pClients[i].m_Stats.m_Load_5, pClients[i].m_Stats.m_Load_15, pClients[i].m_Stats.m_ping_10010, pClients[i].m_Stats.m_ping_189, pClients[i].m_Stats.m_ping_10086,
@@ -637,15 +643,17 @@ void CMain::JSONUpdateThread(void *pUser)
 					pClients[i].m_Stats.m_NetworkIN == 0 || pClients[i].m_LastNetworkIN == 0 ? pClients[i].m_Stats.m_NetworkIN : pClients[i].m_LastNetworkIN,
 					pClients[i].m_Stats.m_NetworkOUT == 0 || pClients[i].m_LastNetworkOUT == 0 ? pClients[i].m_Stats.m_NetworkOUT : pClients[i].m_LastNetworkOUT,
 					pClients[i].m_Stats.m_IORead, pClients[i].m_Stats.m_IOWrite,
-					pClients[i].m_Stats.m_aCustom);
+					pClients[i].m_Stats.m_aCustom,
+					pClients[i].m_Stats.m_aOS[0] ? pClients[i].m_Stats.m_aOS : "");
 				pBuf += strlen(pBuf);
 			}
 			else
 			{
 			    // sava network traffic record to json when close client
 			    // last_network_in == last network in record, last_network_out == last network out record
-				str_format(pBuf, sizeof(aFileBuf) - (pBuf - aFileBuf), "{ \"name\": \"%s\", \"type\": \"%s\", \"host\": \"%s\", \"location\": \"%s\", \"online4\": false, \"online6\": false, \"last_network_in\": %" PRId64 ", \"last_network_out\": %" PRId64 " },\n",
-					pClients[i].m_aName, pClients[i].m_aType, pClients[i].m_aHost, pClients[i].m_aLocation, pClients[i].m_LastNetworkIN, pClients[i].m_LastNetworkOUT);
+				str_format(pBuf, sizeof(aFileBuf) - (pBuf - aFileBuf), "{ \"name\": \"%s\", \"type\": \"%s\", \"host\": \"%s\", \"location\": \"%s\", \"online4\": false, \"online6\": false, \"last_network_in\": %" PRId64 ", \"last_network_out\": %" PRId64 ", \"os\": \"%s\" },\n",
+					pClients[i].m_aName, pClients[i].m_aType, pClients[i].m_aHost, pClients[i].m_aLocation, pClients[i].m_LastNetworkIN, pClients[i].m_LastNetworkOUT,
+					pClients[i].m_Stats.m_aOS[0] ? pClients[i].m_Stats.m_aOS : "");
 				pBuf += strlen(pBuf);
 			}
 		}

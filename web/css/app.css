@@ -428,11 +428,11 @@ body.light .caps-traffic.duo.heavy .half.out {
 }
 
 /* 半之间分隔线 */
-.caps-traffic.duo .half+.half {
+.caps-traffic.duo .half + .half {
     border-left: 1px solid rgba(0, 0, 0, .18);
 }
 
-body.light .caps-traffic.duo .half+.half {
+body.light .caps-traffic.duo .half + .half {
     border-left: 1px solid rgba(0, 0, 0, .08);
 }
 
@@ -559,13 +559,23 @@ table.data tbody tr:hover {
     max-width: 560px;
     background: var(--bg-alt);
     border: 1px solid var(--border);
-    border-radius: 0;
+    border-radius: 16px;
     box-shadow: 0 8px 30px -6px rgba(0, 0, 0, .6);
     padding: 1.25rem 1.35rem;
     display: flex;
     flex-direction: column;
     gap: .9rem;
     animation: fade .25s ease
+}
+
+.modal-box.high-load {
+    border-color: rgba(239, 68, 68, .6);
+    background: linear-gradient(180deg, rgba(239, 68, 68, .16), rgba(239, 68, 68, .08)), var(--bg-alt);
+    box-shadow: 0 0 0 1px rgba(239, 68, 68, .38), 0 10px 28px -10px rgba(239, 68, 68, .28)
+}
+
+body:not(.light) .modal-box.high-load {
+    background: linear-gradient(180deg, rgba(239, 68, 68, .24), rgba(239, 68, 68, .12)), var(--bg-alt)
 }
 
 .modal-title {
@@ -622,7 +632,6 @@ table.data tbody tr:hover {
     font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
     font-size: 12px
 }
-
 /* 资源使用百分比色彩标签 */
 /* 回退：移除资源使用百分比彩色标签样式 */
 
@@ -711,7 +720,6 @@ table.data tbody tr:hover {
 .gauge-half[data-type=hdd] path.arc {
     --gauge-base: #f59e0b
 }
-
 /* 阈值颜色：>=50% 警告黄，>=90% 危险红 */
 .gauge-half[data-warn] path.arc {
     stroke: var(--warn)
@@ -1044,17 +1052,151 @@ body.light .gauge-half .needle {
 }
 
 .cards .card.high-load {
-    border-color: rgba(239, 68, 68, .55);
-    box-shadow: 0 0 0 1px rgba(239, 68, 68, .4), 0 4px 16px -4px rgba(239, 68, 68, .3);
+    border-color: rgba(239, 68, 68, .6);
+    background: linear-gradient(180deg, rgba(239, 68, 68, .22), rgba(239, 68, 68, .12)), var(--bg-alt);
+    box-shadow: 0 0 0 1px rgba(239, 68, 68, .48), 0 6px 18px -6px rgba(239, 68, 68, .28);
 }
 
 table.data tbody tr.high-load {
-    background: rgba(239, 68, 68, .10);
+    background: rgba(239, 68, 68, .18) !important;
 }
 
 table.data tbody tr.high-load:hover {
-    background: rgba(239, 68, 68, .18);
+    background: rgba(239, 68, 68, .26) !important;
 }
+
+/* SSL 域名告警底色：与高负载相同 */
+#sslTable td.alert-domain {
+    background: rgba(239, 68, 68, .18) !important;
+}
+
+#sslTable tr:hover td.alert-domain {
+    background: rgba(239, 68, 68, .26) !important;
+}
+
+/* OS 着色（更明显）：
+	1) 为各 OS 类定义 --os-color 变量
+	2) 行左侧使用 inset box-shadow 画 4px 彩条
+	3) 行背景叠加轻度渐变以提示 OS
+*/
+table.data tbody tr[class*="os-"] {
+    box-shadow: inset 4px 0 0 0 var(--os-color, transparent);
+    background: linear-gradient(180deg, color-mix(in srgb, var(--os-color, transparent) 10%, transparent), transparent 60%);
+}
+
+table.data tbody tr[class*="os-"]:hover {
+    background: linear-gradient(180deg, color-mix(in srgb, var(--os-color, transparent) 16%, transparent), transparent 65%);
+}
+
+.cards .card[class*="os-"] {
+    border-color: color-mix(in srgb, var(--os-color, var(--accent)) 60%, transparent);
+    box-shadow: 0 0 0 1px color-mix(in srgb, var(--os-color, var(--accent)) 40%, transparent), 0 4px 16px -6px color-mix(in srgb, var(--os-color, #000) 35%, transparent);
+}
+
+/* 弹窗 OS 着色：左侧彩条 + 渐变与卡片一致 */
+/* 取消弹窗背景着色，改为仅在标题展示系统胶囊 */
+.os-chip {
+    display: inline-flex;
+    align-items: center;
+    padding: 2px 8px;
+    margin-left: .5rem;
+    border-radius: 999px;
+    font-size: 12px;
+    font-weight: 600;
+    line-height: 1.2;
+    background: var(--os-color, var(--border));
+    color: #fff;
+    border: 0;
+    white-space: nowrap;
+}
+
+/* 为常见系统赋色 */
+.os-linux {
+    --os-color: rgba(16, 185, 129, .85);
+}
+
+/* 绿色 (通用 Linux，保持不变) */
+.os-ubuntu {
+    --os-color: rgba(221, 72, 20, .9);
+}
+
+/* Ubuntu 橙 (#dd4814) */
+.os-debian {
+    --os-color: rgba(215, 10, 83, .9);
+}
+
+/* Debian 品红 (#d70a53) */
+.os-centos {
+    --os-color: rgba(102, 0, 153, .9);
+}
+
+/* CentOS 紫 (#660099) */
+.os-rocky {
+    --os-color: rgba(1, 122, 66, .9);
+}
+
+/* Rocky Linux 绿 (#017a42) */
+.os-almalinux {
+    --os-color: rgba(0, 92, 170, .9);
+}
+
+/* AlmaLinux 蓝 (#005caa) */
+.os-rhel {
+    --os-color: rgba(204, 0, 0, .9);
+}
+
+/* Red Hat 红 (#cc0000) */
+.os-arch {
+    --os-color: rgba(23, 147, 209, .9);
+}
+
+/* Arch Linux 蓝 (#1793d1) */
+.os-alpine {
+    --os-color: rgba(14, 87, 123, .9);
+}
+
+/* Alpine Linux 蓝 (#0e577b) */
+.os-fedora {
+    --os-color: rgba(60, 110, 180, .9);
+}
+
+/* Fedora 蓝 (#3c6eb4) */
+.os-amazon {
+    --os-color: rgba(255, 153, 0, .9);
+}
+
+/* Amazon Linux 橙 (#ff9900) */
+.os-suse {
+    --os-color: rgba(0, 150, 0, .9);
+}
+
+/* openSUSE 绿 (#009600) */
+.os-freebsd {
+    --os-color: rgba(166, 31, 47, .9);
+}
+
+/* FreeBSD 红 (#a61f2f) */
+.os-openbsd {
+    --os-color: rgba(255, 204, 0, .9);
+}
+
+/* OpenBSD 黄 (#ffcc00) */
+.os-bsd {
+    --os-color: rgba(166, 31, 47, .9);
+}
+
+/* BSD 系统一般跟 FreeBSD 接近 */
+.os-darwin {
+    --os-color: rgba(29, 29, 31, .95);
+}
+
+/* macOS 深空灰 (#1d1d1f) */
+.os-windows {
+    --os-color: rgba(0, 120, 215, .95);
+}
+
+/* Windows 蓝 (#0078d7) */
+
 
 /* 旧进度条相关样式已清理 */
 .cards .card-header {
@@ -1115,6 +1257,18 @@ table.data tbody tr.high-load:hover {
     margin-top: .25rem;
 }
 
+/* 证书卡片：域名告警底色（与高负载卡片风格一致） */
+.cards .kvlist .alert-domain {
+    background: rgba(239, 68, 68, .18);
+    border: 1px solid rgba(239, 68, 68, .35);
+    border-radius: 8px;
+    padding: .4rem .5rem;
+}
+
+.cards .kvlist .alert-domain .key {
+    opacity: .85
+}
+
 .cards .expand-btn {
     position: absolute;
     top: .5rem;
@@ -1142,7 +1296,50 @@ table.data tbody tr.high-load:hover {
     display: block;
 }
 
+.os-suse{--os-color: rgba(0,150,0,.9);}        /* openSUSE 绿 (#009600) */
+.os-freebsd{--os-color: rgba(166,31,47,.9);}   /* FreeBSD 红 (#a61f2f) */
+.os-openbsd{--os-color: rgba(255,204,0,.9);}   /* OpenBSD 黄 (#ffcc00) */
+.os-bsd{--os-color: rgba(166,31,47,.9);}       /* BSD 系统一般跟 FreeBSD 接近 */
+.os-darwin{--os-color: rgba(29,29,31,.95);} 	/* macOS 深空灰 (#1d1d1f) */
+.os-windows{--os-color: rgba(0,120,215,.95);}  /* Windows 蓝 (#0078d7) */
+
+
+
+/* 旧进度条相关样式已清理 */
+.cards .card-header{display:flex;align-items:center;justify-content:space-between;gap:.5rem;}
+.cards .card-title{font-weight:600;font-size:.95rem;}
+.cards .tag{font-size:.65rem;padding:.15rem .4rem;border-radius:4px;background:var(--border);letter-spacing:.5px;}
+.cards .status-pill{font-size:.6rem;padding:.2rem .45rem;border-radius:999px;font-weight:500;}
+.cards .status-pill.on{background:var(--ok);color:#fff;}
+.cards .status-pill.off{background:var(--danger);color:#fff;}
+.cards .kvlist{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:.35rem .75rem;font-size:.7rem;line-height:1.25;}
+.cards .kvlist div{display:flex;flex-direction:column;}
+.cards .kvlist span.key{opacity:.6;}
+.cards .buckets{margin-top:.25rem;}
+/* 证书卡片：域名告警底色（与高负载卡片风格一致） */
+.cards .kvlist .alert-domain{background:rgba(239,68,68,.18);border:1px solid rgba(239,68,68,.35);border-radius:8px;padding:.4rem .5rem;}
+.cards .kvlist .alert-domain .key{opacity:.85}
+/* 移除移动端卡片展开箭头与展开区域（已按需简化交互） */
+>>>>>>> upstream/master
 /* 旧移动端 latency spark 样式移除 */
+
+/* 简易信号格，用于服务连通性延迟展示 */
+.sig{display:inline-flex;gap:2px;vertical-align:baseline;margin:0 4px 0 6px;align-items:flex-end;line-height:1}
+.sig .b{width:3px;background:color-mix(in srgb,var(--text-dim) 35%,transparent);border-radius:2px;display:inline-block}
+.sig .b:nth-child(1){height:7px}
+.sig .b:nth-child(2){height:9px}
+.sig .b:nth-child(3){height:11px}
+.sig .b:nth-child(4){height:13px}
+.sig .b:nth-child(5){height:15px}
+.sig .b.on{background:var(--ok)}
+.sig .b.off{opacity:.35}
+
+/* 服务监测项：不同组竖排，同一组横排；不考虑自动换行 */
+.mon-items{display:flex;flex-direction:column;gap:6px;align-items:flex-start}
+.mon-item{display:inline-flex;align-items:center;white-space:nowrap;line-height:1}
+.mon-item .name{margin-right:6px}
+.mon-item .ms{margin-left:6px;font-variant-numeric:tabular-nums}
+.mon-item .sig{margin:0 6px;transform:translateY(-1px)}
 
 /* 新 Logo 样式 */
 .brand {

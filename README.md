@@ -1,56 +1,67 @@
 # ServerStatus中文版：   
 
-* ServerStatus中文版是一个酷炫高逼格的云探针、云监控、服务器云监控、多服务器探针~。。
+* ServerStatus中文版是一个酷炫高逼格的云探针、云监控、服务器云监控、多服务器探针~。
 * 在线演示：https://tz.cloudcpp.com    
 
 [![Python Support](https://img.shields.io/badge/python-3.6%2B%20-blue.svg)](https://github.com/cppla/ServerStatus)
 [![C++ Compiler](http://img.shields.io/badge/C++-GNU-blue.svg?style=flat&logo=cplusplus)](https://github.com/cppla/ServerStatus)
 [![License](https://img.shields.io/badge/license-MIT-4EB1BA.svg?style=flat-square)](https://github.com/cppla/ServerStatus)
-[![Version](https://img.shields.io/badge/Version-Build%201.1.6-red)](https://github.com/cppla/ServerStatus)
+[![Version](https://img.shields.io/badge/Version-Build%201.1.7-red)](https://github.com/cppla/ServerStatus)
 
-![Latest Host Version](https://dl.cpp.la/Archive/serverstatus_1_1_6_1.png)
+![Latest Host Version](https://dl.cpp.la/Archive/serverstatus_1_1_7.png)
 
-`Watchdog触发式告警，interval只是为了防止频繁收到报警信息造成的骚扰，并不是探测间隔。值得注意的是，Exprtk库默认使用窄字符类型，中文等Unicode字符无法解析计算，等待修复。 `    
-
-# 目录：
-
-* clients       	客户端文件
-* server       	 	服务端文件  
-* web           	网站文件
-* server/config.json	探针配置文件                                
-* web/json      	探针月流量        
+`Watchdog触发式告警，interval只是为了防止频繁收到报警，并不是探测间隔。值得注意的是Exprtk使用窄字符类型，中文等Unicode字符无法解析计算。 AI已经能够取代大部分程序员`    
+    
 
 # 部署：
 
 【服务端】：
 ```bash
 
-`Docker`:     
+`Docker`:
 
 wget --no-check-certificate -qO ~/serverstatus-config.json https://raw.githubusercontent.com/cppla/ServerStatus/master/server/config.json && mkdir ~/serverstatus-monthtraffic    
-docker run -d --restart=always --name=serverstatus -v ~/serverstatus-config.json:/ServerStatus/server/config.json -v ~/serverstatus-monthtraffic:/usr/share/nginx/html/json -p 80:80 -p 35601:35601 cppla/serverstatus:latest     
+docker run -d --restart=always --name=serverstatus-server -v ~/serverstatus-config.json:/ServerStatus/server/config.json -v ~/serverstatus-monthtraffic:/usr/share/nginx/html/json -p 80:80 -p 35601:35601 cppla/serverstatus:server     
 
-`Docker-compose(推荐)`: docker-compose up -d
+`Docker-compose`: 
+docker compose -f docker-compose-server.yml up -d
+
+`Dockerfile.server`(本地构建服务端):
+docker build -f Dockerfile.server -t serverstatus-server .
 ```
 
 【客户端】：
 ```bash
-wget --no-check-certificate -qO client-linux.py 'https://raw.githubusercontent.com/cppla/ServerStatus/master/clients/client-linux.py' && nohup python3 client-linux.py SERVER={$SERVER} USER={$USER} PASSWORD={$PASSWORD} >/dev/null 2>&1 &
 
-eg:
-wget --no-check-certificate -qO client-linux.py 'https://raw.githubusercontent.com/cppla/ServerStatus/master/clients/client-linux.py' && nohup python3 client-linux.py SERVER=45.79.67.132 USER=s04  >/dev/null 2>&1 &
+`Shell`:
+
+wget --no-check-certificate -qO client-linux.py 'https://raw.githubusercontent.com/cppla/ServerStatus/master/clients/client-linux.py' && nohup python3 client-linux.py SERVER={$SERVER} USER={$USER} >/dev/null 2>&1 &  
+
+`Docker`: 
+docker run -d --restart=always --name=serverstatus-client --network=host --pid=host -e SERVER=127.0.0.1 -e USER=s01 cppla/serverstatus:client
+
+`Docker-compose`: 
+SERVER=127.0.0.1 USER=s01 docker compose -f docker-compose-client.yml up -d --force-recreate
+
+`Dockerfile.client`(本地构建客户端):
+docker build -f Dockerfile.client -t serverstatus-client .
+
+`docker环境变量`: 
+SERVER --- 可选 - 默认 127.0.0.1
+USER --- 可选 - 默认 s01
+PORT --- 可选 - 默认 35601
+PASSWORD --- 可选 - 默认 USER_DEFAULT_PASSWORD
+INTERVAL --- 可选 - 默认 1
+PROBEPORT --- 可选 - 默认 80
+PROBE_PROTOCOL_PREFER --- 可选 - 默认 ipv4
+PING_PACKET_HISTORY_LEN --- 可选 - 默认 100
+CU --- 可选 - 默认 cu.tz.cloudcpp.com
+CT --- 可选 - 默认 ct.tz.cloudcpp.com
+CM --- 可选 - 默认 cm.tz.cloudcpp.com
+CLIENT --- 可选 - 默认psutil, client可选
 ```
 
-# 主题：            
-
-* layui：https://github.com/zeyudada/StatusServerLayui ，预览：https://sslt.8zyw.cn            
-<img src=https://dl.cpp.la/Archive/serverstatus_layui.png width=200 height=100 />
-
-* light：https://github.com/orilights/ServerStatus-Theme-Light ，预览：https://tz.cloudcpp.com/index3.html    
-<img src=https://dl.cpp.la/Archive/serverstatus_light.png width=200 height=100 />  
-
-
-# 手动安装教程：     
+# 教程：     
    
 **【服务端配置】**           
           
@@ -92,16 +103,16 @@ cd ServerStatus/server && make
 	],
 	"monitors": [
 		{
-			"name": "监测网站，默认为一天在线率",
-			"host": "https://www.baidu.com",
-			"interval": 1200,
+			"name": "抖音",
+			"host": "https://www.douyin.com",
+			"interval": 600,
 			"type": "https"
 		},
 		{
-			"name": "监测tcp服务端口",
-			"host": "1.1.1.1:80",
-			"interval": 1200,
-			"type": "tcp"
+			"name": "百度",
+			"host": "https://www.baidu.com",
+			"interval": 600,
+			"type": "https"
 		}
 	],
 	"sslcerts": [
@@ -180,28 +191,34 @@ web-dir参数为上一步设置的网站根目录，务必修改成自己网站�
 ```
 
 **【客户端配置】**    
+    
+#### client-linux.py Linux版
+```bash
+# 1、修改 client-linux.py 中的 SERVER、username、password
+python3 client-linux.py
+# 2、以传参的方式启动
+python3 client-linux.py SERVER=127.0.0.1 USER=s01
 
-客户端有两个版本，client-linux为普通linux，client-psutil为跨平台版，普通版不成功，换成跨平台版即可。        
-
-#### 一、client-linux版配置：       
-1、vim client-linux.py, 修改SERVER地址，username帐号， password密码        
-2、python3 client-linux.py 运行即可。      
-
-#### 二、client-psutil版配置:                
-1、安装psutil跨平台依赖库       
 ```
-`Debian/Ubuntu`: apt -y install python3-pip && pip3 install psutil    
-`Centos/Redhat`: yum -y install python3-pip gcc python3-devel && pip3 install psutil      
-`Windows`: https://pypi.org/project/psutil/    
+
+#### client-psutil.py 跨平台版
+```bash
+# 安装依赖
+# Debian/Ubuntu
+apt -y install python3-psutil
+# Centos/Redhat
+yum -y install python3-pip gcc python3-devel && pip3 install psutil
+# Windows: 从 https://pypi.org/project/psutil/ 安装
 ```
-2、vim client-psutil.py, 修改SERVER地址，username帐号， password密码       
-3、python3 client-psutil.py 运行即可。    
 
-服务器和客户端自行加入开机启动，或进程守护，或后台方式运行。 例如： nohup python3 client-linux.py &    
+#### 后台运行与开机启动
+```bash
+# 后台运行
+nohup python3 client-linux.py &
 
-`extra scene (run web/ssview.py)`
-![Shell View](https://dl.cpp.la/Archive/serverstatus-shell.png?version=2023)
-
+# 开机启动 (crontab -e)
+@reboot /usr/bin/python3 /path/to/client-linux.py
+```
 
 # Make Better        
 
