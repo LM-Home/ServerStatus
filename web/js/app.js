@@ -14,7 +14,10 @@ const els = {
     last: () => document.getElementById('lastUpdate'),
     serversBody: () => document.getElementById('serversBody'),
     monitorsBody: () => document.getElementById('monitorsBody'),
-    sslBody: () => document.getElementById('sslBody')
+    sslBody: () => document.getElementById('sslBody'),
+    themeBtn: () => document.getElementById('themeToggle'),
+    tabs: () => document.querySelectorAll('#navTabs [data-tab]'),
+    panels: () => document.querySelectorAll('.panel')
 };
 
 // (清理) 精简进位函数，仅保留最小所需
@@ -303,14 +306,73 @@ function renderServersCards() {
 function parseCustom(str) {
     const items = [];
     if (typeof str !== 'string' || !str.trim()) return { items: [] };
-    str.split(';').forEach(seg => {
-        if (!seg) return;
-        const [rawK, rawV] = seg.split('=');
-        if (!rawK) return;
-        const k = String(rawK).trim();
-        const v = parseInt((rawV || '').trim(), 10);
-        if (!isNaN(v)) items.push({ key: k, label: k, ms: Math.max(0, v) });
+
+    const s = str.trim();
+    if (s.startsWith('[') && s.endsWith(']')) {
+        try {
+            const arr = JSON.parse(s);
+            arr.forEach(a => {
+                if (a.name) {
+                    items.push({
+                        key: a.name,
+                        label: a.name,
+                        ms: a.conn || 0,
+                        dns: a.dns || 0,
+                        down: a.down || 0,
+                        rate: a.rate || 0,
+                        isJson: true
+                    });
+                }
+            });
+            return { items };
+        } catch (e) {
+            console.error('JSON parse error for custom field:', e);
+        }
+    }
+
+    // 1. 适配旧版 Go 服务端：按 <br> 拆分多项
+    const lines = str.split(/<br\s*\/?>/i);
+    
+    lines.forEach(line => {
+        if (!line || !line.trim()) return;
+
+        // 2. 适配 Go 服务端：按 \\t (字符串) 或 \t (制表符) 拆分
+        const parts = line.split(/\\t|\t/);
+        if (parts.length < 2) return;
+
+        const label = parts[0].trim();
+        let msValue = 0;
+
+        // 3. 寻找包含 "连接:" 的部分提取延迟数值
+        for (let i = 1; i < parts.length; i++) {
+            if (parts[i].includes('连接:')) {
+                const match = parts[i].match(/\d+/);
+                if (match) msValue = parseInt(match[0], 10);
+                break;
+            }
+        }
+
+        items.push({
+            key: label,
+            label: label,
+            ms: msValue,
+            raw: line // 保留原始字符串以备后用
+        });
     });
+
+    // 如果上述逻辑没解析出东西，尝试兼容旧的 Key:Value 格式
+    if (items.length === 0) {
+        str.split(/[;,\n]/).forEach(seg => {
+            if (!seg || !seg.trim()) return;
+            const parts = seg.split(/[=:]/);
+            if (parts.length >= 2) {
+                const k = parts[0].trim();
+                const v = parseInt(parts[1].trim(), 10);
+                if (!isNaN(v)) items.push({ key: k, label: k, ms: Math.max(0, v) });
+            }
+        });
+    }
+
     return { items };
 }
 
@@ -328,14 +390,23 @@ function renderMonitors() {
         const proto = isOnline ? (s.online4 && s.online6 ? '双栈' : (s.online4 ? 'IPv4' : 'IPv6')) : '离线';
         const pill = isOnline ? `<span class="pill on">${proto}</span>` : `<span class="pill off">${proto}</span>`;
         const parsed = parseCustom(s.custom || '');
-        const row = parsed.items.map(it => `<span class="mon-item"><span class="name">${it.label}</span>${bars(it.ms)}<span class="ms">${it.ms}ms</span></span>`).join('');
+        const row = parsed.items.map(it => {
+            if (it.isJson) {
+                return `<span class="mon-item" title="解析: ${it.dns}ms | 下载: ${it.down}ms | 在线率: ${it.rate.toFixed(1)}%">
+                  <span class="name">${it.label}</span>${bars(it.ms)}<span class="ms">${it.ms}ms</span>
+                </span>`;
+            } else {
+                return `<span class="mon-item"><span class="name">${it.label}</span>${bars(it.ms)}<span class="ms">${it.ms}ms</span></span>`;
+            }
+        }).join('');
         html += `<tr>
       <td>${pill}</td>
       <td>${s.name || '-'}</td>
+      <td>${s.location || '-'}</td>
       <td><div class="mon-items">${row || '-'}</div></td>
     </tr>`;
     });
-    tbody.innerHTML = html || '<tr><td colspan="3" class="muted">无服务监测数据</td></tr>';
+    tbody.innerHTML = html || '<tr><td colspan="4" class="muted">无服务监测数据</td></tr>';
 }
 
 function renderMonitorsCards() {
@@ -347,7 +418,15 @@ function renderMonitorsCards() {
         const proto = isOnline ? (s.online4 && s.online6 ? '双栈' : (s.online4 ? 'IPv4' : 'IPv6')) : '离线';
         const pill = `<span class="status-pill ${isOnline ? 'on' : 'off'}">${proto}</span>`;
         const parsed = parseCustom(s.custom || '');
-        const row = parsed.items.map(it => `<span class="mon-item"><span class="name">${it.label}</span>${bars(it.ms)}<span class="ms">${it.ms}ms</span></span>`).join('');
+        const row = parsed.items.map(it => {
+            if (it.isJson) {
+                return `<span class="mon-item" title="解析: ${it.dns}ms | 下载: ${it.down}ms | 在线率: ${it.rate.toFixed(1)}%">
+                  <span class="name">${it.label}</span>${bars(it.ms)}<span class="ms">${it.ms}ms</span>
+                </span>`;
+            } else {
+                return `<span class="mon-item"><span class="name">${it.label}</span>${bars(it.ms)}<span class="ms">${it.ms}ms</span></span>`;
+            }
+        }).join('');
         html += `<div class="card">
       <div class="card-header"><div class="card-title">${s.name || '-'} <span class="tag">${s.location || '-'}</span></div>${pill}</div>
       <div class="kvlist" style="grid-template-columns:repeat(2,minmax(0,1fr));">
@@ -711,6 +790,55 @@ function stopDetailAutoUpdate() {
         S._detailTimer = null;
     }
 }
+
+// ====== UI 交互逻辑 (主题与 Tab) ======
+
+function initUI() {
+    // 1. 主题切换
+    const themeBtn = els.themeBtn();
+    const updateThemeTitle = (isLight) => {
+        if (themeBtn) themeBtn.title = `当前模式: ${isLight ? '浅色' : '深色'} (点击切换)`;
+    };
+
+    const savedTheme = localStorage.getItem('theme');
+    const isLightInitial = savedTheme === 'light';
+    if (isLightInitial) document.body.classList.add('light');
+    updateThemeTitle(isLightInitial);
+
+    if (themeBtn) {
+        themeBtn.addEventListener('click', () => {
+            const isLight = document.body.classList.toggle('light');
+            localStorage.setItem('theme', isLight ? 'light' : 'dark');
+            updateThemeTitle(isLight);
+        });
+    }
+
+    // 2. Tab 切换
+    const tabs = els.tabs();
+    const panels = els.panels();
+
+    tabs.forEach(tab => {
+        tab.addEventListener('click', () => {
+            const target = tab.getAttribute('data-tab');
+            if (!target) return;
+
+            // 切换按钮状态
+            tabs.forEach(t => t.classList.toggle('active', t === tab));
+
+            // 切换面板显示
+            panels.forEach(p => {
+                const id = p.getAttribute('id');
+                p.classList.toggle('active', id === `panel-${target}`);
+            });
+
+            // 如果切换到其它 tab，可能需要触发重绘（例如图表适配）
+            window.dispatchEvent(new Event('resize'));
+        });
+    });
+}
+
+// 初始化 UI
+initUI();
 
 fetchData();
 setInterval(fetchData, 4000);
