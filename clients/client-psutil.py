@@ -60,6 +60,14 @@ CU = _env_str("CU", CU)
 CT = _env_str("CT", CT)
 CM = _env_str("CM", CM)
 
+def parse_cli_args(arguments):
+    overrides = {}
+    for argument in arguments:
+        key, separator, value = argument.partition('=')
+        if separator and key in {'SERVER', 'PORT', 'USER', 'PASSWORD', 'INTERVAL'}:
+            overrides[key] = value
+    return overrides
+
 def get_uptime():
     return int(time.time() - psutil.boot_time())
 
@@ -91,6 +99,52 @@ def get_hdd():
 
 def get_cpu():
     return psutil.cpu_percent(interval=INTERVAL)
+
+def get_cpu_cores():
+    return psutil.cpu_count(logical=True) or 0
+
+def normalize_cpu_model(value):
+    return " ".join(str(value or "").split())[:160]
+
+def is_generic_cpu_model(value):
+    v = normalize_cpu_model(value).lower().replace('-', '').replace('_', '').replace(' ', '')
+    return v in ('', 'unknown', 'x8664', 'amd64', 'i386', 'i686', 'aarch64', 'arm64') or v.startswith('armv')
+
+def get_platform_cpu_vendor():
+    values = [
+        platform.processor(),
+        getattr(platform.uname(), 'processor', ''),
+        platform.machine(),
+        getattr(platform.uname(), 'machine', ''),
+        platform.platform(),
+    ]
+    text = " ".join(normalize_cpu_model(v).lower() for v in values)
+    if 'genuineintel' in text:
+        return 'GenuineIntel'
+    if 'authenticamd' in text:
+        return 'AuthenticAMD'
+    if 'intel' in text:
+        return 'Intel'
+    if 'amd' in text:
+        return 'AMD'
+    if sys.platform.startswith('darwin') and platform.machine().lower() in ('arm64', 'aarch64'):
+        return 'Apple'
+    if any(token in text for token in ('aarch64', 'arm64', 'armv7', 'armv8', ' arm ')):
+        return 'ARM'
+    return ''
+
+def get_platform_cpu_arch():
+    return normalize_cpu_model(platform.machine() or platform.processor() or platform.architecture()[0])
+
+def get_cpu_model():
+    for value in (platform.processor(), getattr(platform.uname(), 'processor', '')):
+        value = normalize_cpu_model(value)
+        if value and not is_generic_cpu_model(value):
+            return value
+    vendor = normalize_cpu_model(get_platform_cpu_vendor())
+    if vendor:
+        return vendor
+    return get_platform_cpu_arch()
 
 def liuliang():
     NET_IN = 0
@@ -410,17 +464,12 @@ def byte_str(object):
         print(type(object))
 
 if __name__ == '__main__':
-    for argc in sys.argv:
-        if 'SERVER' in argc:
-            SERVER = argc.split('SERVER=')[-1]
-        elif 'PORT' in argc:
-            PORT = int(argc.split('PORT=')[-1])
-        elif 'USER' in argc:
-            USER = argc.split('USER=')[-1]
-        elif 'PASSWORD' in argc:
-            PASSWORD = argc.split('PASSWORD=')[-1]
-        elif 'INTERVAL' in argc:
-            INTERVAL = int(argc.split('INTERVAL=')[-1])
+    cli_args = parse_cli_args(sys.argv[1:])
+    SERVER = cli_args.get('SERVER', SERVER)
+    PORT = int(cli_args.get('PORT', PORT))
+    USER = cli_args.get('USER', USER)
+    PASSWORD = cli_args.get('PASSWORD', PASSWORD)
+    INTERVAL = int(cli_args.get('INTERVAL', INTERVAL))
     socket.setdefaulttimeout(30)
     get_realtime_data()
     while 1:
@@ -472,6 +521,8 @@ if __name__ == '__main__':
                 print(data)
                 raise socket.error
 
+            CPUCores = get_cpu_cores()
+            CPUModel = get_cpu_model()
             while 1:
                 CPU = get_cpu()
                 NET_IN, NET_OUT = liuliang()
@@ -498,6 +549,8 @@ if __name__ == '__main__':
                 array['hdd_total'] = HDDTotal
                 array['hdd_used'] = HDDUsed
                 array['cpu'] = CPU
+                array['cpu_cores'] = CPUCores
+                array['cpu_model'] = CPUModel
                 array['network_rx'] = netSpeed.get("netrx")
                 array['network_tx'] = netSpeed.get("nettx")
                 array['network_in'] = NET_IN

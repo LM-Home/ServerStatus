@@ -60,6 +60,14 @@ CU = _env_str("CU", CU)
 CT = _env_str("CT", CT)
 CM = _env_str("CM", CM)
 
+def parse_cli_args(arguments):
+    overrides = {}
+    for argument in arguments:
+        key, separator, value = argument.partition('=')
+        if separator and key in {'SERVER', 'PORT', 'USER', 'PASSWORD', 'INTERVAL'}:
+            overrides[key] = value
+    return overrides
+
 def get_uptime():
     with open('/proc/uptime', 'r') as f:
         uptime = f.readline().split('.', 2)
@@ -132,6 +140,73 @@ def get_cpu():
         st = 1
     result = 100-(t[len(t)-1]*100.00/st)
     return round(result, 1)
+
+def get_cpu_cores():
+    try:
+        with open('/proc/stat') as f:
+            cores = sum(1 for line in f if re.match(r'^cpu\d+\s', line))
+        if cores > 0:
+            return cores
+    except Exception:
+        pass
+    return os.cpu_count() or 0
+
+def normalize_cpu_model(value):
+    return re.sub(r'\s+', ' ', str(value or '')).strip()[:160]
+
+def is_generic_cpu_model(value):
+    v = normalize_cpu_model(value).lower().replace('-', '').replace('_', '').replace(' ', '')
+    return v in ('', 'unknown', 'x8664', 'amd64', 'i386', 'i686', 'aarch64', 'arm64') or v.startswith('armv')
+
+def get_lscpu_info():
+    result = {}
+    try:
+        output = subprocess.check_output(['lscpu'], stderr=subprocess.DEVNULL, timeout=2).decode(errors='ignore')
+        for line in output.splitlines():
+            if ':' not in line:
+                continue
+            key, value = line.split(':', 1)
+            key = key.strip().lower()
+            value = normalize_cpu_model(value)
+            if value and key not in result:
+                result[key] = value
+    except Exception:
+        pass
+    return result
+
+def get_cpuinfo_values():
+    result = {}
+    try:
+        with open('/proc/cpuinfo') as f:
+            for line in f:
+                if ':' not in line:
+                    continue
+                key, value = line.split(':', 1)
+                key = key.strip().lower()
+                value = normalize_cpu_model(value)
+                if value and key not in result:
+                    result[key] = value
+    except Exception:
+        pass
+    return result
+
+def get_cpu_model():
+    cpuinfo = get_cpuinfo_values()
+    lscpu = get_lscpu_info()
+    for value in (
+        cpuinfo.get('model name'),
+        lscpu.get('model name'),
+        cpuinfo.get('hardware'),
+        cpuinfo.get('processor'),
+        platform.processor(),
+    ):
+        value = normalize_cpu_model(value)
+        if value and not value.isdigit() and not is_generic_cpu_model(value):
+            return value
+    vendor = normalize_cpu_model(lscpu.get('vendor id') or cpuinfo.get('vendor_id'))
+    if vendor:
+        return vendor
+    return normalize_cpu_model(lscpu.get('architecture') or platform.machine() or platform.processor())
 
 def liuliang():
     NET_IN = 0
@@ -442,17 +517,12 @@ def byte_str(object):
         print(type(object))
 
 if __name__ == '__main__':
-    for argc in sys.argv:
-        if 'SERVER' in argc:
-            SERVER = argc.split('SERVER=')[-1]
-        elif 'PORT' in argc:
-            PORT = int(argc.split('PORT=')[-1])
-        elif 'USER' in argc:
-            USER = argc.split('USER=')[-1]
-        elif 'PASSWORD' in argc:
-            PASSWORD = argc.split('PASSWORD=')[-1]
-        elif 'INTERVAL' in argc:
-            INTERVAL = int(argc.split('INTERVAL=')[-1])
+    cli_args = parse_cli_args(sys.argv[1:])
+    SERVER = cli_args.get('SERVER', SERVER)
+    PORT = int(cli_args.get('PORT', PORT))
+    USER = cli_args.get('USER', USER)
+    PASSWORD = cli_args.get('PASSWORD', PASSWORD)
+    INTERVAL = int(cli_args.get('INTERVAL', INTERVAL))
     socket.setdefaulttimeout(30)
     get_realtime_data()
     while True:
@@ -505,6 +575,8 @@ if __name__ == '__main__':
                 print(data)
                 raise socket.error
 
+            CPUCores = get_cpu_cores()
+            CPUModel = get_cpu_model()
             while True:
                 CPU = get_cpu()
                 NET_IN, NET_OUT = liuliang()
@@ -530,6 +602,8 @@ if __name__ == '__main__':
                 array['hdd_total'] = HDDTotal
                 array['hdd_used'] = HDDUsed
                 array['cpu'] = CPU
+                array['cpu_cores'] = CPUCores
+                array['cpu_model'] = CPUModel
                 array['network_rx'] = netSpeed.get("netrx")
                 array['network_tx'] = netSpeed.get("nettx")
                 array['network_in'] = NET_IN
