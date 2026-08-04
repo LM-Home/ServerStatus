@@ -418,6 +418,11 @@ function trafficCaps(s, small){
   const heavy = m.traffic >= 1000 * 1000 * 1000 * 1000;
   return `<span class="caps-traffic duo ${heavy ? 'heavy' : 'normal'}${small ? ' sm' : ''}" title="本月下行 | 上行"><span class="half in">${humanMinMBFromB(m.monthIn)}</span><span class="half out">${humanMinMBFromB(m.monthOut)}</span></span>`;
 }
+function totalTrafficCaps(s, small){
+  const total = num(s.network_in) + num(s.network_out);
+  const heavy = total >= 1000 * 1000 * 1000 * 1000;
+  return `<span class="caps-traffic duo ${heavy ? 'heavy' : 'normal'}${small ? ' sm' : ''}" title="总下行 | 上行"><span class="half in">${humanMinMBFromB(s.network_in)}</span><span class="half out">${humanMinMBFromB(s.network_out)}</span></span>`;
+}
 function loadCellHTML(s){
   const load = s.load_1 === -1 ? '–' : num(s.load_1).toFixed(2);
   const cores = cpuCoreLabel(s);
@@ -488,18 +493,18 @@ function serverRowSignature(s, m){
 
 function serverRowHTML(s, m, signature){
   const netNow = `${humanMinKBFromB(s.network_rx)} | ${humanMinKBFromB(s.network_tx)}`;
-  const netTotal = `${humanMinMBFromB(s.network_in)} | ${humanMinMBFromB(s.network_out)}`;
+  const netTotal = totalTrafficCaps(s);
   const alertClass = m.rowLevel ? ` alert-${m.rowLevel}` : '';
   return `<tr data-key="${esc(s._key)}" data-online="${m.online ? 1 : 0}" data-sig="${esc(signature)}" class="row-server${alertClass}${osClass(s.os)}" style="cursor:${m.online ? 'pointer' : 'default'};">
     <td>${protoSignal(s)}</td>
-    <td>${trafficCaps(s)}</td>
     <td><span class="node-name" title="${esc(s.name || '-')}">${esc(s.name || '-')}</span></td>
-    <td>${virtPill(s.type)}</td>
     <td>${esc(s.location || '-')}</td>
     <td>${esc(s.uptime || '-')}</td>
     <td>${loadCellHTML(s)}</td>
     <td>${netNow}</td>
+    <td>${trafficCaps(s)}</td>
     <td>${netTotal}</td>
+    <td>${virtPill(s.type)}</td>
     <td>${m.online ? gaugeHTML('cpu', s.cpu) : '-'}</td>
     <td>${m.online ? gaugeHTML('mem', m.memPct) : '-'}</td>
     <td>${m.online ? gaugeHTML('hdd', m.hddPct) : '-'}</td>
@@ -551,7 +556,7 @@ function renderServersCards(){
       <div class="kvlist">
         <div><span class="key">负载</span><span>${s.load_1 === -1 ? '–' : num(s.load_1).toFixed(2)}</span></div>
         <div><span class="key">在线</span><span>${esc(s.uptime || '-')}</span></div>
-        <div><span class="key">月流量</span><span>${trafficCaps(s, true)}</span></div>
+        <div><span class="key">流量</span><span>${trafficCaps(s, true)}</span></div>
         <div><span class="key">网络</span><span>${humanMinKBFromB(s.network_rx)} | ${humanMinKBFromB(s.network_tx)}</span></div>
         <div><span class="key">CPU</span><span>${num(s.cpu).toFixed(0)}%</span></div>
         <div><span class="key">内存</span><span>${m.memPct.toFixed(0)}%</span></div>
@@ -654,7 +659,7 @@ function refreshDetail(){
       <section class="detail-section"><h4>网络</h4>
         <div class="kv"><span>当前 ↓|↑</span><span class="mono">${humanMinKBFromB(s.network_rx)} | ${humanMinKBFromB(s.network_tx)}</span></div>
         <div class="kv"><span>本月 ↓|↑</span><span>${trafficCaps(s, true)}</span></div>
-        <div class="kv"><span>总流量 ↓|↑</span><span class="mono">${humanMinMBFromB(s.network_in)} | ${humanMinMBFromB(s.network_out)}</span></div>
+        <div class="kv"><span>总流量 ↓|↑</span><span>${totalTrafficCaps(s, true)}</span></div>
       </section>
       <section class="detail-section"><h4>连接</h4>
         <div class="kv"><span>TCP / UDP</span><span class="mono">${num(s.tcp_count)} / ${num(s.udp_count)}</span></div>
