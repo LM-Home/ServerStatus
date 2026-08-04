@@ -570,13 +570,16 @@ function parseCustom(str){
   }).filter(Boolean);
 }
 function signalBars(ms){
+  if(!(typeof ms === 'number') || ms <= 0){
+    return `<span class="sig fail">${[0,1,2,3,4].map(() => `<i class="b off"></i>`).join('')}</span>`;
+  }
   const levels = [20, 50, 100, 160];
-  let on = typeof ms === 'number' ? (ms <= levels[0] ? 5 : ms <= levels[1] ? 4 : ms <= levels[2] ? 3 : ms <= levels[3] ? 2 : 1) : 0;
+  let on = ms <= levels[0] ? 5 : ms <= levels[1] ? 4 : ms <= levels[2] ? 3 : ms <= levels[3] ? 2 : 1;
   return `<span class="sig">${[0,1,2,3,4].map(i => `<i class="b ${i < on ? 'on' : 'off'}"></i>`).join('')}</span>`;
 }
 function monitorItems(s){
   const items = parseCustom(s.custom);
-  return items.map(item => `<span class="mon-item"><span class="name">${esc(item.name)}</span>${signalBars(item.ms)}<span class="ms">${item.ms}ms</span></span>`).join('') || '-';
+  return items.map(item => `<span class="mon-item"><span class="name">${esc(item.name)}</span>${signalBars(item.ms)}<span class="ms${item.ms > 0 ? '' : ' fail'}">${item.ms > 0 ? item.ms + 'ms' : '失败'}</span></span>`).join('') || '-';
 }
 function renderMonitors(){
   $('monitorsBody').innerHTML = S.servers.map(s => `<tr><td>${protoPill(s)}</td><td>${esc(s.name || '-')}</td><td>${esc(s.location || '-')}</td><td><div class="mon-items">${monitorItems(s)}</div></td></tr>`).join('') || `<tr><td colspan="4" class="muted" style="text-align:center;padding:1rem;">无数据</td></tr>`;

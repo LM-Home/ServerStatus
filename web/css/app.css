@@ -266,12 +266,14 @@ body.light .cards .card-spec-chip{background:color-mix(in srgb,var(--accent) 8%,
 .sig .b:nth-child(5){height:15px}
 .sig .b.on{background:var(--ok)}
 .sig .b.off{opacity:.35}
+.sig.fail .b{background:var(--danger);opacity:.55}
 
 /* 服务监测项：不同组竖排，同一组横排；不考虑自动换行 */
 .mon-items{display:flex;flex-direction:column;gap:6px;align-items:flex-start}
 .mon-item{display:inline-flex;align-items:center;white-space:nowrap;line-height:1}
 .mon-item .name{margin-right:6px}
 .mon-item .ms{margin-left:6px;font-variant-numeric:tabular-nums}
+.mon-item .ms.fail{color:var(--danger)}
 .mon-item .sig{margin:0 6px;transform:translateY(-1px)}
 
 /* 新 Logo 样式 */
