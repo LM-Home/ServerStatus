@@ -645,7 +645,7 @@ function refreshDetail(){
     <div class="detail-grid">
       <section class="detail-section"><h4>身份</h4>
         <div class="kv"><span>节点 / 位置</span><span class="mono">${esc(s.name || '-')} / ${esc(s.location || '-')}</span></div>
-        <div class="kv"><span>虚拟化 / 主机</span><span class="mono">${esc(s.type || '-')} / ${esc(s.host || '-')}</span></div>
+        <div class="kv"><span>虚拟 / 主机</span><span class="mono">${esc(s.type || '-')} / ${esc(s.host || '-')}</span></div>
         <div class="kv"><span>协议 / 在线</span><span class="detail-inline">${protoPill(s)}<span class="mono">${esc(s.uptime || '-')}</span></span></div>
       </section>
       <section class="detail-section resource-section"><h4>资源</h4>
@@ -653,8 +653,8 @@ function refreshDetail(){
       </section>
       <section class="detail-section"><h4>网络</h4>
         <div class="kv"><span>当前 ↓|↑</span><span class="mono">${humanMinKBFromB(s.network_rx)} | ${humanMinKBFromB(s.network_tx)}</span></div>
-        <div class="kv"><span>总流量 ↓|↑</span><span class="mono">${humanMinMBFromB(s.network_in)} | ${humanMinMBFromB(s.network_out)}</span></div>
         <div class="kv"><span>本月 ↓|↑</span><span>${trafficCaps(s, true)}</span></div>
+        <div class="kv"><span>总流量 ↓|↑</span><span class="mono">${humanMinMBFromB(s.network_in)} | ${humanMinMBFromB(s.network_out)}</span></div>
       </section>
       <section class="detail-section"><h4>连接</h4>
         <div class="kv"><span>TCP / UDP</span><span class="mono">${num(s.tcp_count)} / ${num(s.udp_count)}</span></div>
