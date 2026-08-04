@@ -33,10 +33,10 @@ jobs:
 
       - name: Validate compose files
         run: |
-          docker compose -f docker-compose-server.yml config
+          docker compose -f docker-compose.yml config
           docker compose -f docker-compose-client.yml config
 
       - name: Build Docker images
         run: |
-          docker build -f Dockerfile.server -t serverstatus-server:test .
+          docker build -f Dockerfile -t serverstatus-server:test .
           docker build -f Dockerfile.client -t serverstatus-client:test .

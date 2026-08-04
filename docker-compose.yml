@@ -2,7 +2,7 @@ services:
   serverstatus-server:
     build:
       context: .
-      dockerfile: Dockerfile.server
+      dockerfile: Dockerfile
     image: cppla/serverstatus:server
     healthcheck:
       test: ["CMD", "wget", "-q", "-O", "/dev/null", "http://127.0.0.1/api/health"]
