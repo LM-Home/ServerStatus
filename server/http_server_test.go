@@ -156,3 +156,13 @@ func TestHTTPRejectsInvalidAndOversizedBodies(t *testing.T) {
 		t.Fatalf("invalid watchdog: status=%d body=%s", response.Code, response.Body.String())
 	}
 }
+
+func TestStaticRootServesIndexOnAllPlatforms(t *testing.T) {
+	app := newTestApp(t, minimalTestConfig())
+	router := app.router()
+
+	response := performRequest(router, http.MethodGet, "/", "", "")
+	if response.Code != 200 || !strings.Contains(response.Body.String(), "test-ui") {
+		t.Fatalf("root index: status=%d body=%s", response.Code, response.Body.String())
+	}
+}

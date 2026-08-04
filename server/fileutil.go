@@ -7,6 +7,7 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"runtime"
 	"sort"
 	"syscall"
 	"time"
@@ -152,6 +153,9 @@ func pruneBackups(configPath string, keep int) {
 }
 
 func syncDirectory(directory string) error {
+	if runtime.GOOS == "windows" {
+		return nil
+	}
 	dir, err := os.Open(directory)
 	if err != nil {
 		return err

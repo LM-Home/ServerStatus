@@ -9,6 +9,7 @@ import (
 	"mime"
 	"net/http"
 	"os"
+	"path"
 	"path/filepath"
 	"strconv"
 	"strings"
@@ -368,7 +369,7 @@ func (a *App) staticHandler(c *gin.Context) {
 		c.JSON(http.StatusNotFound, gin.H{"ok": false, "error": "endpoint was not found"})
 		return
 	}
-	requestPath := filepath.Clean("/" + c.Request.URL.Path)
+	requestPath := path.Clean("/" + c.Request.URL.Path)
 	if requestPath == "/" {
 		requestPath = "/index.html"
 	}
