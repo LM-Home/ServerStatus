@@ -501,10 +501,10 @@ function serverRowHTML(s, m, signature){
     <td>${esc(s.location || '-')}</td>
     <td>${esc(s.uptime || '-')}</td>
     <td>${loadCellHTML(s)}</td>
+    <td>${virtPill(s.type)}</td>
     <td>${netNow}</td>
     <td>${trafficCaps(s)}</td>
     <td>${netTotal}</td>
-    <td>${virtPill(s.type)}</td>
     <td>${m.online ? gaugeHTML('cpu', s.cpu) : '-'}</td>
     <td>${m.online ? gaugeHTML('mem', m.memPct) : '-'}</td>
     <td>${m.online ? gaugeHTML('hdd', m.hddPct) : '-'}</td>
