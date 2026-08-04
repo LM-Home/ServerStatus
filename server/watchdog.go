@@ -108,8 +108,7 @@ func (a *App) evaluateWatchdogs(username string, offline bool) {
 	for _, alert := range pending {
 		alert := alert
 		go func() {
-			message := fmt.Sprintf("🚨 节点告警\n\n"+
-				"📛 告警名称: %s\n"+
+			message := fmt.Sprintf("📛 告警名称: %s\n"+
 				"⏱️ 告警时间: %s\n"+
 				"🖥️ 节点名称: %s\n"+
 				"📦 虚拟架构: %s\n"+

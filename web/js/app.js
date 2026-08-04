@@ -573,7 +573,7 @@ function signalBars(ms){
   if(!(typeof ms === 'number') || ms <= 0){
     return `<span class="sig fail">${[0,1,2,3,4].map(() => `<i class="b off"></i>`).join('')}</span>`;
   }
-  const levels = [20, 50, 100, 160];
+  const levels = [100, 200, 400, 800];
   let on = ms <= levels[0] ? 5 : ms <= levels[1] ? 4 : ms <= levels[2] ? 3 : ms <= levels[3] ? 2 : 1;
   return `<span class="sig">${[0,1,2,3,4].map(i => `<i class="b ${i < on ? 'on' : 'off'}"></i>`).join('')}</span>`;
 }
