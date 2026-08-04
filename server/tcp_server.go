@@ -129,6 +129,9 @@ func (s *AgentServer) handleConnection(conn net.Conn) {
 			}
 		}
 	}
+	if err := scanner.Err(); err != nil {
+		s.app.logger.Printf("agent connection error for %s: %v", username, err)
+	}
 }
 
 func remoteFamily(address net.Addr) int {

@@ -3,3 +3,4 @@ default.sublime-workspace
 # pycharm
 .idea
 web/newIndex.html
+.vscode/launch.json
