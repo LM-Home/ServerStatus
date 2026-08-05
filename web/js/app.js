@@ -637,9 +637,9 @@ function refreshDetail(){
     modalBox.classList.toggle('alert-warning', m.rowLevel === 'warning');
   }
   const loadSeries = [
-    { data: S.loadHist[s._key]?.l1 || [], color:'#8b5cf6', label:'load1' },
-    { data: S.loadHist[s._key]?.l5 || [], color:'#10b981', label:'load5' },
-    { data: S.loadHist[s._key]?.l15 || [], color:'#f59e0b', label:'load15' }
+    { data: S.loadHist[s._key]?.l1 || [], color:'#8b5cf6', label:'1min' },
+    { data: S.loadHist[s._key]?.l5 || [], color:'#10b981', label:'5min' },
+    { data: S.loadHist[s._key]?.l15 || [], color:'#f59e0b', label:'15min' }
   ];
   const latencySeries = [
     { data: S.hist[s._key]?.cu || [], color:'#3b82f6', label:'联通' },
@@ -667,7 +667,7 @@ function refreshDetail(){
         <div class="kv"><span>联通 / 电信 / 移动</span><span class="mono">${packetLossLine(s)}</span></div>
       </section>
     </div>
-    <section class="detail-section chart-section"><div class="chart-head"><h4>负载趋势</h4>${chartLegend(loadSeries)}</div><canvas id="loadChart" class="detail-chart" height="130"></canvas></section>
+    <section class="detail-section chart-section"><div class="chart-head"><h4>负载</h4>${chartLegend(loadSeries)}</div><canvas id="loadChart" class="detail-chart" height="130"></canvas></section>
     <section class="detail-section chart-section"><div class="chart-head"><h4>三网延迟</h4>${chartLegend(latencySeries)}</div><canvas id="latChart" class="detail-chart" height="150"></canvas></section>`;
   drawLineChart('loadChart', loadSeries, '暂无负载数据');
   drawLineChart('latChart', latencySeries, '暂无延迟数据', 'ms');
