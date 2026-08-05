@@ -467,7 +467,7 @@ function detailResourceHTML(s, m){
     <div class="resource-mini"><span>IO</span><strong>读 ${humanMinMBFromB(s.io_read)} / 写 ${humanMinMBFromB(s.io_write)}</strong></div>`;
 }
 function packetLossLine(s){
-  return [s.ping_10010, s.ping_189, s.ping_10086].map(p => `${clamp(num(p), 0, 100).toFixed(0)}%`).join('|');
+  return [s.ping_10010, s.ping_189, s.ping_10086].map(p => `${clamp(num(p), 0, 100).toFixed(0)}%`).join(' / ');
 }
 function chartLegend(series){
   return `<div class="chart-legend">${series.map(item => `<span><i style="background:${esc(item.color)}"></i>${esc(item.label)}</span>`).join('')}</div>`;
@@ -664,7 +664,7 @@ function refreshDetail(){
       <section class="detail-section"><h4>连接</h4>
         <div class="kv"><span>TCP / UDP</span><span class="mono">${num(s.tcp_count)} / ${num(s.udp_count)}</span></div>
         <div class="kv"><span>进程 / 线程</span><span class="mono">${num(s.process_count)} / ${num(s.thread_count)}</span></div>
-        <div class="kv"><span>联通|电信|移动</span><span class="mono">${packetLossLine(s)}</span></div>
+        <div class="kv"><span>联通 / 电信 / 移动</span><span class="mono">${packetLossLine(s)}</span></div>
       </section>
     </div>
     <section class="detail-section chart-section"><div class="chart-head"><h4>负载趋势</h4>${chartLegend(loadSeries)}</div><canvas id="loadChart" class="detail-chart" height="130"></canvas></section>
