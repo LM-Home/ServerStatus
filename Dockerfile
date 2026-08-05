@@ -1,29 +1,18 @@
-FROM golang:1.25-alpine AS builder
+# 运行阶段 - 直接使用预编译二进制（由 GitHub Actions 多平台编译生成）
+FROM alpine:3.20
 
-WORKDIR /src/server
-
-COPY server/go.mod server/go.sum ./
-RUN go mod download
-
-COPY server/*.go ./
-
-ARG VERSION=2.0.0
-ARG COMMIT=none
-ARG BUILD_TIME=unknown
-
-RUN CGO_ENABLED=0 GOOS=linux go build \
-    -trimpath \
-    -ldflags="-s -w -X main.version=${VERSION} -X main.commit=${COMMIT} -X main.buildTime=${BUILD_TIME}" \
-    -o /out/serverstatus .
-
-FROM alpine:3.22
+ARG TARGETARCH
 
 LABEL maintainer="cppla <https://cpp.la>"
 
 RUN apk add --no-cache ca-certificates tzdata \
     && mkdir -p /app/config /app/data /app/web
 
-COPY --from=builder /out/serverstatus /usr/local/bin/serverstatus
+# 复制 GitHub Actions 中预编译好的二进制产物
+# 映射关系: serverstatus-linux-amd64 / serverstatus-linux-arm64 -> serverstatus
+COPY serverstatus-linux-${TARGETARCH} /usr/local/bin/serverstatus
+RUN chmod +x /usr/local/bin/serverstatus
+
 COPY server/config.json /app/config/config.json
 COPY web /app/web/
 

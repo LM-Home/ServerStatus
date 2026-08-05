@@ -17,22 +17,50 @@ jobs:
     strategy:
       matrix:
         platform: [ubuntu-latest]
+        go-version: [ '1.25' ]
 
     name: Build
     runs-on: ${{ matrix.platform }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-        
+
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: ${{ matrix.go-version }}
+
       - name: Bump Version and Push Tag
         id: bump
         uses: anothrNick/github-tag-action@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           WITH_V: false  # 不生成带v前缀的标签，如1.0.0而非v1.0.0
-          
+
+      - name: Build Go
+        run: |
+          cd server
+          go mod download
+          VERSION=${{ steps.bump.outputs.new_tag }}
+          COMMIT=${{ github.sha }}
+          BUILD_TIME=$(date -u '+%Y-%m-%dT%H:%M:%SZ')
+          LDFLAGS="-s -w -X main.version=${VERSION} -X main.commit=${COMMIT} -X main.buildTime=${BUILD_TIME}"
+          CGO_ENABLED=0 GOOS=linux GOARCH=386 go build -trimpath -ldflags "${LDFLAGS}" -tags netgo -installsuffix netgo -o ../serverstatus-linux-386
+          CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -trimpath -ldflags "${LDFLAGS}" -tags netgo -installsuffix netgo -o ../serverstatus-linux-amd64
+          CGO_ENABLED=0 GOOS=linux GOARCH=arm64 go build -trimpath -ldflags "${LDFLAGS}" -tags netgo -installsuffix netgo -o ../serverstatus-linux-arm64
+          CGO_ENABLED=0 GOOS=linux GOARCH=arm GOARM=7 go build -trimpath -ldflags "${LDFLAGS}" -tags netgo -installsuffix netgo -o ../serverstatus-linux-armv7
+          CGO_ENABLED=0 GOOS=freebsd GOARCH=amd64 go build -trimpath -ldflags "${LDFLAGS}" -tags netgo -installsuffix netgo -o ../serverstatus-freebsd-amd64
+
+      - name: Upload Go to Release
+        uses: softprops/action-gh-release@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: ${{ steps.bump.outputs.new_tag }}
+          files: ${{ github.workspace }}/serverstatus-*
+
       - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v2
+        uses: docker/setup-buildx-action@v3
 
       - name: Login to Docker Hub
         if: github.event_name != 'pull_request'
@@ -49,12 +77,13 @@ jobs:
           tags: |
             type=raw,value=${{ steps.bump.outputs.new_tag }}
             type=raw,value=latest
-     
+
       # 构建并推送Docker镜像
       - name: Build and Push
-        uses: docker/build-push-action@v4
+        uses: docker/build-push-action@v6
         with:
           context: .
+          platforms: linux/amd64,linux/arm64
           push: ${{ github.event_name != 'pull_request' }}
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}

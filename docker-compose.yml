@@ -21,6 +21,8 @@ services:
     volumes:
       - ./server/config.json:/app/config/config.json
       - ./web/json:/app/data
+      - ./web/css/custom-mount.css:/app/web/css/custom-mount.css
+      - ./web/js/custom-mount.js:/app/web/js/custom-mount.js
     ports:
       - 35601:35601
       - 8080:80
