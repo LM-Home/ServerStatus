@@ -1,13 +1,5 @@
-const SORT_PREFERENCE_KEY = 'serverstatusSortPreference';
-const SORT_FIELDS = new Set(['config','name','status','load','cpu','memory','hdd','traffic','loss']);
-
 function loadSortPreference(){
-  const fallback = { sort: 'config', dir: 'asc' };
-  try{
-    const saved = JSON.parse(localStorage.getItem(SORT_PREFERENCE_KEY) || 'null');
-    if(saved && SORT_FIELDS.has(saved.sort) && (saved.dir === 'asc' || saved.dir === 'desc')) return saved;
-  }catch(_err){}
-  return fallback;
+  return { sort: 'config', dir: 'asc' };
 }
 
 const initialSortPreference = loadSortPreference();
@@ -213,12 +205,12 @@ async function fetchData(){
       server._order = index;
       if(!S.hist[key]) S.hist[key] = { cu: [], ct: [], cm: [] };
       if(!S.loadHist[key]) S.loadHist[key] = { l1: [], l5: [], l15: [] };
-      pushHistory(S.hist[key].cu, server.time_10010);
-      pushHistory(S.hist[key].ct, server.time_189);
-      pushHistory(S.hist[key].cm, server.time_10086);
-      pushHistory(S.loadHist[key].l1, server.load_1);
-      pushHistory(S.loadHist[key].l5, server.load_5);
-      pushHistory(S.loadHist[key].l15, server.load_15);
+      pushHistory(S.hist[key].cu, server.time_10010, false);
+      pushHistory(S.hist[key].ct, server.time_189, false);
+      pushHistory(S.hist[key].cm, server.time_10086, false);
+      pushHistory(S.loadHist[key].l1, server.load_1, true);
+      pushHistory(S.loadHist[key].l5, server.load_5, true);
+      pushHistory(S.loadHist[key].l15, server.load_15, true);
       return server;
     });
     S.ssl = data.sslcerts || [];
@@ -232,8 +224,11 @@ async function fetchData(){
 function shouldSuppressStatsReload(){
   return S.admin.saving || S.activeTab === 'config' || Date.now() < S.suppressStatsReloadUntil;
 }
-function pushHistory(arr, value){
-  if(typeof value === 'number' && Number.isFinite(value) && value >= 0) arr.push(value);
+function pushHistory(arr, value, allowZero){
+  const valid = typeof value === 'number' && Number.isFinite(value);
+  if(!valid) return;
+  if(value === 0 && !allowZero) return;
+  if(value >= 0) arr.push(value);
   if(arr.length > 120) arr.splice(0, arr.length - 120);
 }
 
@@ -668,7 +663,7 @@ function refreshDetail(){
       </section>
     </div>
     <section class="detail-section chart-section"><div class="chart-head"><h4>负载</h4>${chartLegend(loadSeries)}</div><canvas id="loadChart" class="detail-chart" height="130"></canvas></section>
-    <section class="detail-section chart-section"><div class="chart-head"><h4>三网延迟</h4>${chartLegend(latencySeries)}</div><canvas id="latChart" class="detail-chart" height="150"></canvas></section>`;
+    <section class="detail-section chart-section"><div class="chart-head"><h4>延迟</h4>${chartLegend(latencySeries)}</div><canvas id="latChart" class="detail-chart" height="150"></canvas></section>`;
   drawLineChart('loadChart', loadSeries, '暂无负载数据');
   drawLineChart('latChart', latencySeries, '暂无延迟数据', 'ms');
 }
@@ -695,7 +690,7 @@ function drawLineChart(id, series, emptyText, unit = ''){
     return;
   }
   const padL = unit ? 50 : 42, padR = 10, padT = 12, padB = 20;
-  let min = Math.min(0, ...all), max = Math.max(...all);
+  let min = Math.max(0, Math.min(...all) - 10), max = Math.max(...all);
   if(max - min < 1) max = min + 1;
   const range = max - min;
   const n = Math.max(...series.map(s => s.data.length));
@@ -759,11 +754,6 @@ function syncSortControls(){
   $('sortSelect').value = S.filters.sort;
   $('sortDirection').textContent = S.filters.dir === 'desc' ? '降序' : '升序';
 }
-function saveSortPreference(){
-  try{
-    localStorage.setItem(SORT_PREFERENCE_KEY, JSON.stringify({ sort: S.filters.sort, dir: S.filters.dir }));
-  }catch(_err){}
-}
 function bindFilters(){
   syncSortControls();
   $('serverSearch').addEventListener('input', e => { S.filters.query = e.target.value; scheduleServersRender(); });
@@ -779,20 +769,17 @@ function bindFilters(){
     S.filters.sort = e.target.value;
     if(S.filters.sort === 'config') S.filters.dir = 'asc';
     syncSortControls();
-    saveSortPreference();
     renderServersViewNow();
   });
   $('sortDirection').addEventListener('click', () => {
     S.filters.dir = S.filters.dir === 'desc' ? 'asc' : 'desc';
     syncSortControls();
-    saveSortPreference();
     renderServersViewNow();
   });
   document.querySelectorAll('#serversTable th[data-sort]').forEach(th => th.addEventListener('click', () => {
     if(S.filters.sort === th.dataset.sort) S.filters.dir = S.filters.dir === 'desc' ? 'asc' : 'desc';
     else S.filters.sort = th.dataset.sort;
     syncSortControls();
-    saveSortPreference();
     renderServersViewNow();
   }));
 }

@@ -6,3 +6,5 @@ web/newIndex.html
 .vscode/launch.json
 web/js/custom-mount.js
 web/css/custom-mount.css
+web/css/flag-icons.min.css
+web/flags
