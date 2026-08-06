@@ -225,10 +225,8 @@ function shouldSuppressStatsReload(){
   return S.admin.saving || S.activeTab === 'config' || Date.now() < S.suppressStatsReloadUntil;
 }
 function pushHistory(arr, value, allowZero){
-  const valid = typeof value === 'number' && Number.isFinite(value);
-  if(!valid) return;
-  if(value === 0 && !allowZero) return;
-  if(value >= 0) arr.push(value);
+  if(typeof value !== 'number' || !Number.isFinite(value)) return;
+  arr.push(value === 0 && !allowZero ? null : value);
   if(arr.length > 120) arr.splice(0, arr.length - 120);
 }
 
@@ -710,10 +708,15 @@ function drawLineChart(id, series, emptyText, unit = ''){
   series.forEach(item => {
     if(item.data.length < 2) return;
     ctx.strokeStyle = item.color; ctx.lineWidth = 1.7; ctx.beginPath();
+    let segmentOpen = false;
     item.data.forEach((v, i) => {
+      if(!Number.isFinite(v)){
+        segmentOpen = false;
+        return;
+      }
       const x = padL + xStep * i;
       const y = padT + (H-padT-padB) * (1 - (v - min) / range);
-      if(i === 0) ctx.moveTo(x,y); else ctx.lineTo(x,y);
+      if(segmentOpen) ctx.lineTo(x,y); else { ctx.moveTo(x,y); segmentOpen = true; }
     });
     ctx.stroke();
   });
