@@ -701,6 +701,27 @@ function drawLineChart(id, series, emptyText, unit = ''){
   const range = max - min;
   const n = Math.max(...series.map(s => s.data.length));
   const xStep = (W - padL - padR) / Math.max(1, n - 1);
+  const ditherPx = 3;
+  const yPos = series.map(s => s.data.map(v => Number.isFinite(v) ? padT + (H-padT-padB) * (1 - (v - min) / range) : null));
+  const offset = Array.from({ length: series.length }, () => new Array(n).fill(0));
+  for(let i = 0; i < n; i++){
+    const pts = [];
+    series.forEach((item, si) => { if(yPos[si][i] != null) pts.push({ si, y: yPos[si][i] }); });
+    if(pts.length < 2) continue;
+    pts.sort((a, b) => a.y - b.y);
+    const tol = 1.2;
+    let groups = [], cur = [pts[0]];
+    for(let k = 1; k < pts.length; k++){
+      if(pts[k].y - cur[cur.length - 1].y <= tol) cur.push(pts[k]);
+      else { groups.push(cur); cur = [pts[k]]; }
+    }
+    groups.push(cur);
+    groups.forEach(g => {
+      if(g.length < 2) return;
+      const base = (g.length - 1) / 2;
+      g.forEach((p, idx) => { offset[p.si][i] = (idx - base) * ditherPx; });
+    });
+  }
   const light = document.body.classList.contains('light');
   const axis = light ? 'rgba(0,0,0,.22)' : 'rgba(255,255,255,.18)';
   const grid = light ? 'rgba(0,0,0,.08)' : 'rgba(255,255,255,.10)';
@@ -718,17 +739,17 @@ function drawLineChart(id, series, emptyText, unit = ''){
     ctx.fillText(val.toFixed(decimals) + unit, 4, y + 3);
     ctx.strokeStyle = grid; ctx.beginPath(); ctx.moveTo(padL,y); ctx.lineTo(W-padR,y); ctx.stroke();
   }
-  series.forEach(item => {
+  series.forEach((item, si) => {
     if(item.data.length < 2) return;
     ctx.strokeStyle = item.color; ctx.lineWidth = 1.7; ctx.beginPath();
     let segmentOpen = false;
     item.data.forEach((v, i) => {
-      if(!Number.isFinite(v)){
+      if(!Number.isFinite(v) || yPos[si][i] == null){
         segmentOpen = false;
         return;
       }
       const x = padL + xStep * i;
-      const y = padT + (H-padT-padB) * (1 - (v - min) / range);
+      const y = yPos[si][i] + offset[si][i];
       if(segmentOpen) ctx.lineTo(x,y); else { ctx.moveTo(x,y); segmentOpen = true; }
     });
     ctx.stroke();
