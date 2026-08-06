@@ -707,10 +707,15 @@ function drawLineChart(id, series, emptyText, unit = ''){
   const text = light ? 'rgba(30,41,59,.7)' : 'rgba(226,232,240,.82)';
   ctx.strokeStyle = axis; ctx.lineWidth = 1; ctx.beginPath(); ctx.moveTo(padL,padT); ctx.lineTo(padL,H-padB); ctx.lineTo(W-padR,H-padB); ctx.stroke();
   ctx.fillStyle = text; ctx.font = '10px system-ui';
+  const step = range / 4;
+  let decimals = max < 10 ? 1 : 0;
+  if(step > 0 && step < 1){
+    decimals = Math.max(decimals, Math.min(4, Math.ceil(-Math.log10(step))));
+  }
   for(let i=0;i<=4;i++){
     const y = padT + (H-padT-padB) * i / 4;
     const val = max - range * i / 4;
-    ctx.fillText(val.toFixed(max < 10 ? 1 : 0) + unit, 4, y + 3);
+    ctx.fillText(val.toFixed(decimals) + unit, 4, y + 3);
     ctx.strokeStyle = grid; ctx.beginPath(); ctx.moveTo(padL,y); ctx.lineTo(W-padR,y); ctx.stroke();
   }
   series.forEach(item => {
