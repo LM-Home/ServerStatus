@@ -688,7 +688,15 @@ function drawLineChart(id, series, emptyText, unit = ''){
     return;
   }
   const padL = unit ? 50 : 42, padR = 10, padT = 12, padB = 20;
-  let min = Math.max(0, Math.min(...all) - 10), max = Math.max(...all);
+  const dataMin = Math.min(...all), dataMax = Math.max(...all);
+  let min, max;
+  if(unit){
+    min = Math.max(0, dataMin - 10);
+    max = dataMax + 10;
+  }else{
+    min = Math.max(0, dataMin - 0.1);
+    max = dataMax + 0.1;
+  }
   if(max - min < 1) max = min + 1;
   const range = max - min;
   const n = Math.max(...series.map(s => s.data.length));
