@@ -697,7 +697,7 @@ function drawLineChart(id, series, emptyText, unit = ''){
     min = Math.max(0, dataMin - 0.1);
     max = dataMax + 0.1;
   }
-  if(max - min < 1) max = min + 1;
+  if(max <= min) max = min + (unit ? 10 : 0.1);
   const range = max - min;
   const n = Math.max(...series.map(s => s.data.length));
   const xStep = (W - padL - padR) / Math.max(1, n - 1);
