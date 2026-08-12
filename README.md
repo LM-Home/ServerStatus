@@ -16,7 +16,7 @@ ServerStatus 是一个轻量的服务器探针和云监控面板，支持多节�
 
 ```bash
 # Docker Compose，本地构建加：--build
-ADMIN_TOKEN='your-strong-token' docker compose -f docker-compose-server.yml up -d --build
+ADMIN_TOKEN='your-strong-token' docker compose -f docker-compose-server.yml up -d    
 ```
 
 ```bash
@@ -97,7 +97,7 @@ Docker 镜像中的默认路径为：
 | 环境变量 | 默认值 | 说明 |
 | --- | --- | --- |
 | `CONFIG_PATH` | `/app/config/config.json` | 主配置文件 |
-| `STATS_PATH` | `/app/data/stats.json` | 月流量与状态持久化文件 |
+| `STATS_PATH` | `/app/data/stats.json` | 月流量与状态持久化文件；每 60 秒写入，关键操作与正常退出时立即写入 |
 | `WEB_DIR` | `/app/web` | WebUI 静态文件目录 |
 | `HTTP_ADDR` | `:80` | WebUI 与 HTTP API 监听地址 |
 | `AGENT_ADDR` | `:35601` | 客户端 TCP 上报监听地址 |
