@@ -16,7 +16,7 @@ ServerStatus 是一个轻量的服务器探针和云监控面板，支持多节�
 
 ```bash
 # Docker Compose，本地构建加：--build
-ADMIN_TOKEN='your-strong-token' docker compose -f docker-compose-server.yml up -d    
+ADMIN_TOKEN='your-strong-token' docker compose -f docker-compose.yml up -d    
 ```
 
 ```bash
@@ -31,8 +31,19 @@ docker run -d --restart=always --name=serverstatus-server \
   -v ~/serverstatus-config.json:/app/config/config.json \
   -v ~/serverstatus-data:/app/data \
   -p 8080:80 -p 35601:35601 \
-  cppla/serverstatus:server
+  lm317379829/serverstatus:latest
 ```
+
+也可以从 GitHub Releases 直接下载服务端可执行文件（无需 Docker）：
+
+```bash
+# 从 https://github.com/LM-Home/ServerStatus/releases 下载对应平台的二进制
+wget -qO serverstatus https://github.com/LM-Home/ServerStatus/releases/latest/download/serverstatus-linux-amd64
+chmod +x serverstatus
+ADMIN_TOKEN='your-strong-token' ./serverstatus --config=config.json --stats=stats.json --web-dir=web --http=:8080 --agent=:35601
+```
+
+Release 产物命名规则：`serverstatus-{os}-{arch}`，目前提供 `linux-386`、`linux-amd64`、`linux-arm64`、`linux-armv7` 与 `freebsd-amd64`。
 
 启动后访问：
 
@@ -74,6 +85,17 @@ nohup python3 client-linux.py SERVER=127.0.0.1 USER=s01 PASSWORD=USER_DEFAULT_PA
 1. 运行命令显式传递 `USER=s01`
 2. 修改 `docker-compose-client.yml` 中的 `USER` 默认值
 3. Docker 或系统环境中的 `USER`
+
+除 Python 客户端外，也可使用 Go 编写的客户端（GitHub Releases 提供预编译二进制，无需安装 Python）：
+
+```bash
+# 从 https://github.com/LM-Home/ServerStatus-Go/releases 下载对应平台的二进制
+wget -qO serverStatus https://github.com/LM-Home/ServerStatus-Go/releases/latest/download/serverStatus-linux-amd64
+chmod +x serverStatus
+./serverStatus --server=127.0.0.1 --username=s01 --password=USER_DEFAULT_PASSWORD
+```
+
+Go 客户端产物命名规则：`serverStatus-{os}-{arch}`，目前提供 `linux-386`、`linux-amd64`、`linux-arm64` 与 `freebsd-amd64`。详细参数见 [LM-Home/ServerStatus-Go](https://github.com/LM-Home/ServerStatus-Go)。
 
 | 变量 | 默认值 | 说明 |
 | --- | --- | --- |
@@ -259,7 +281,7 @@ username='节点一号'&name='上海节点'&location='中国 🇨🇳'&type='云
 
 字段名必须使用系统定义的英文名称。可用字段包括：`username`、`name`、`type`、`host`、`location`、`load_1`、`load_5`、`load_15`、`cpu`、`memory_total`、`memory_used`、`swap_total`、`swap_used`、`hdd_total`、`hdd_used`、`network_rx`、`network_tx`、`network_in`、`network_out`、`last_network_in`、`last_network_out`、`ping_10010`、`ping_189`、`ping_10086`、`time_10010`、`time_189`、`time_10086`、`tcp_count`、`udp_count`、`process_count`、`thread_count`、`io_read`、`io_write`、`online4`、`online6`。
 
-客户端断开 25 秒后仍未重连，服务端才计算离线规则，避免短暂网络波动触发告警。每个节点、每条规则分别记录冷却时间。
+客户端断开后，服务端每隔 15 秒检查一次是否重连，连续 4 次仍未重连才计算离线规则，避免短暂网络波动触发告警；中途重连则取消离线判定。每个节点、每条规则分别记录冷却时间。
 
 ### SSL 证书
 
@@ -280,6 +302,12 @@ cd server
 go mod download
 go test ./...
 go build -trimpath -ldflags='-s -w' -o serverstatus .
+```
+
+Release 版本带版本号、commit 和构建时间，可用 `--version` 查看。使用 `-ldflags` 注入：
+
+```bash
+go build -trimpath -ldflags='-s -w -X main.version=2.0.0 -X main.commit=<sha> -X main.buildTime=<time>' -o serverstatus .
 ```
 
 从 `server/` 目录启动：
@@ -311,13 +339,13 @@ go test ./...
 go test -race ./...
 go vet ./...
 
-# Docker 镜像
+# Docker 镜像（服务端由 GitHub Actions 预编译多平台二进制，需先在本目录生成二进制）
 cd ..
-docker build -f Dockerfile.server -t cppla/serverstatus:server .
+docker build -f Dockerfile -t lm317379829/serverstatus:latest .
 docker build -f Dockerfile.client -t cppla/serverstatus:client .
 
 # Compose 配置
-docker compose -f docker-compose-server.yml config
+docker compose -f docker-compose.yml config
 docker compose -f docker-compose-client.yml config
 ```
 
@@ -332,6 +360,34 @@ CI 还会检查 Go 格式、Python 客户端、Shell 脚本、WebUI JavaScript�
 5. 启动 Go 服务端后检查 `/api/health`，再观察客户端自动重连。
 
 `stats.json` 会按节点的 `name/type/host/location` 恢复月流量基线。修改这些身份字段会被视为新节点。
+
+## 与上游（cppla/ServerStatus）的功能差异
+
+本仓库基于上游 Go 版本修改，主要差异如下：
+
+### 服务端
+
+- **离线判定**：客户端断开后每 15 秒检查一次是否重连，连续 4 次仍未重连才计算离线规则；中途重连则取消离线判定（上游为断开 25 秒后单次判定）。
+- **Windows 支持**：服务端可在 Windows 上运行——跳过 `syncDirectory` 目录同步、使用 `path.Clean` 处理静态文件路径（`fileutil.go`、`http_server.go`）。
+- **告警消息格式**：Watchdog 回调改为 Emoji 排版（📛 告警名称 / ⏱️ 告警时间 / 🖥️ 节点名称 / 📦 虚拟架构 / 🌍 主机位置），去掉了 `username` 与 `host` 字段（`watchdog.go`）。
+- **连接错误日志**：Agent 连接异常（断流、协议错误）时记录具体错误日志（`tcp_server.go`）。
+
+### WebUI
+
+- 表格列调整为「协议 / 节点 / 位置 / 在线 / 负载 / 虚拟化 / 网速 / 月流量 / 总流量 / CPU / 内存」，新增**总流量**列。
+- 三网延迟显示改用 ` / ` 分隔，监测失败（`ms <= 0`）时标红并显示「失败」。
+- 信号强度阈值调整为 100/200/400/800ms，失败状态红色显示。
+- 图表改进：负载坐标轴支持小数刻度、多系列重叠点自动偏移避免遮挡、断线分段绘制、负载标签改为 1min/5min/15min。
+- 排序偏好不再写入 `localStorage`，每次刷新回到默认「配置顺序」。
+- 支持通过 `custom-mount.css` / `custom-mount.js` 做自定义挂载（`web/index.html`）。
+
+### 构建与发布
+
+- **Docker 镜像**：服务端镜像改为 `lm317379829/serverstatus:latest`（多架构 `linux/amd64`、`linux/arm64`）。
+- **可执行文件**：GitHub Actions 构建并发布到 Releases，产物命名 `serverstatus-{os}-{arch}`，覆盖 `linux-386`、`linux-amd64`、`linux-arm64`、`linux-armv7`、`freebsd-amd64`。
+- **镜像构建方式**：`Dockerfile` 直接复制 CI 预编译二进制，不再在镜像内编译；`docker-compose-server.yml` 已重命名为 `docker-compose.yml`。
+- **自动版本**：自动打版本标签，`--version` 可查看版本号、commit 与构建时间；自动清理旧的 Releases 与 workflow 记录。
+- **Go 客户端**：独立于本仓库维护，见 [LM-Home/ServerStatus-Go](https://github.com/LM-Home/ServerStatus-Go)，其 Releases 提供 `linux-386`、`linux-amd64`、`linux-arm64`、`freebsd-amd64` 的预编译二进制。
 
 
 ## 致谢

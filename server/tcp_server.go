@@ -196,18 +196,26 @@ func (a *App) disconnectAgent(username string, conn net.Conn, connectionID uint6
 	node.HasUpdate = false
 	node.Pong = false
 	a.nodeMu.Unlock()
-	time.AfterFunc(25*time.Second, func() {
-		if a.ctx.Err() != nil {
+	go a.checkAgentOffline(username, connectionID)
+}
+
+func (a *App) checkAgentOffline(username string, connectionID uint64) {
+	const offlineChecks = 4
+	for check := 0; check < offlineChecks; check++ {
+		select {
+		case <-a.ctx.Done():
 			return
+		case <-time.After(15 * time.Second):
 		}
 		a.nodeMu.RLock()
 		current := a.nodes[username]
 		stillOffline := current != nil && !current.Connected && current.ConnectionID == connectionID
 		a.nodeMu.RUnlock()
-		if stillOffline {
-			a.evaluateWatchdogs(username, true)
+		if !stillOffline {
+			return
 		}
-	})
+	}
+	a.evaluateWatchdogs(username, true)
 }
 
 func (a *App) updateAgent(username string, connectionID uint64, update AgentStats) bool {
