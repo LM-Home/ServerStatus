@@ -9,3 +9,4 @@ web/css/custom-mount.css
 web/css/flag-icons.min.css
 web/flags
 *.exe
+*test.go

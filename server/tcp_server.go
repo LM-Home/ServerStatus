@@ -225,11 +225,14 @@ func (a *App) updateAgent(username string, connectionID uint64, update AgentStat
 		a.nodeMu.Unlock()
 		return false
 	}
-	if update.Online4 != nil {
-		node.Online4 = *update.Online4
+	// 客户端上报的 online4/online6 来自其出网探测，探测失败不代表节点
+	// 与服务器失去连接，因此只允许把状态置为在线，不允许置为离线；
+	// 连接家族已在 connectAgent 中按实际连接设置，断连时由 disconnectAgent 重置。
+	if update.Online4 != nil && *update.Online4 {
+		node.Online4 = true
 	}
-	if update.Online6 != nil {
-		node.Online6 = *update.Online6
+	if update.Online6 != nil && *update.Online6 {
+		node.Online6 = true
 	}
 	node.Stats = update
 	node.HasUpdate = true
