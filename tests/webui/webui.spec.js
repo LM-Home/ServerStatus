@@ -122,9 +122,9 @@ test('online node detail shows resources and labeled charts', async ({ page }) =
   await expect(page.locator('#detailModal')).toBeVisible();
   await expect(page.locator('#detailTitle')).toContainText('alpha-online');
   await expect(page.locator('#detailContent h4')).toHaveText([
-    '身份', '资源', '网络', '连接', '负载趋势', '三网延迟'
+    '身份', '资源', '网络', '连接', '负载', '延迟'
   ]);
-  await expect(page.locator('.chart-legend')).toContainText(['load1load5load15', '联通电信移动']);
+  await expect(page.locator('.chart-legend')).toContainText(['1min5min15min', '联通电信移动']);
   await expect(page.locator('.resource-meter')).toHaveCount(4);
 
   await page.locator('#detailClose').click();
